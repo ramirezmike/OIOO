@@ -139,4 +139,26 @@ mod tests {
         assert_eq!(0, oioo.queue.len());
         assert_eq!(10, get_number_in_store(&oioo.store)); 
     }
+
+    #[test]
+    fn test_one_out_is_random() {
+        let mut oioo_1 = OIOO::<usize>::new();
+        let mut oioo_2 = OIOO::<usize>::new();
+        let count:usize = 11;
+
+        let mut keep_trying = true;
+        while keep_trying {
+            for x in 0..count {
+                oioo_1.one_in(x);
+                oioo_2.one_in(x);
+            }
+
+            for _ in 0..count {
+                if oioo_1.one_out() != oioo_2.one_out() {
+                    keep_trying = false; 
+                    break;
+                }
+            }
+        }
+    }
 }
