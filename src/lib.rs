@@ -1,13 +1,12 @@
 #![allow(dead_code)]
 
-use rand::{ rngs::ThreadRng }; 
+use rand::{ Rng };
 
 struct OIOO<T> {
     store: Vec::<Option<T>>,
     queue: Vec::<T>,
     social_distance: usize,
-    capacity: usize,
-    rng: ThreadRng
+    capacity: usize
 }
 
 impl<T> OIOO<T> {
@@ -16,8 +15,7 @@ impl<T> OIOO<T> {
             store: Vec::<Option<T>>::new(),
             queue: Vec::<T>::new(),
             social_distance: 6, 
-            capacity: 10,
-            rng: rand::thread_rng()
+            capacity: 10
         }
     }
 
@@ -31,10 +29,20 @@ impl<T> OIOO<T> {
     }
 
     pub fn one_out(self: &mut Self) -> Option<T> {
-        let out = match self.store.last().is_some() {
+        if self.store.len() == 0 { return None; }
+
+        let mut rng = rand::thread_rng();
+        let out_index = rng.gen_range(0, self.store.iter()
+                                                   .filter(|x| x.is_some())
+                                                   .collect::<Vec<_>>()
+                                                   .len()) * (self.social_distance + 1);
+
+        let out = match self.store[out_index].is_some() {
                     true => {
-                        self.remove_social_distance();
-                        self.store.pop().unwrap()
+                        let social_distance_index = out_index + self.social_distance + 1;
+                        let mut out_and_social_distance = self.store.drain(out_index..social_distance_index)
+                                                                    .collect::<Vec<_>>();
+                        Some(out_and_social_distance.remove(0).unwrap())
                     }
                     false => None
                   };
@@ -126,7 +134,7 @@ mod tests {
         assert_eq!(1, oioo.queue.len());
         assert_eq!(10, get_number_in_store(&oioo.store)); 
                        
-        let out = oioo.one_out();
+        oioo.one_out();
                        
         assert_eq!(0, oioo.queue.len());
         assert_eq!(10, get_number_in_store(&oioo.store)); 
