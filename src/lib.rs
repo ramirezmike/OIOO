@@ -1,8 +1,11 @@
-#![allow(dead_code)]
-
 use rand::{ Rng };
 
-struct OIOO<T> {
+pub enum Phase {
+    One { occupancy: usize, is_essential: bool },
+    Two { occupancy: usize },
+}
+
+pub struct OIOO<T> {
     store: Vec::<Option<T>>,
     queue: Vec::<T>,
     social_distance: usize,
@@ -10,12 +13,19 @@ struct OIOO<T> {
 }
 
 impl<T> OIOO<T> {
-    pub fn new() -> OIOO<T> {
+    pub fn new(phase: Phase) -> OIOO<T> {
         OIOO {
             store: Vec::<Option<T>>::new(),
             queue: Vec::<T>::new(),
-            social_distance: 6, 
-            capacity: 10
+            social_distance: 6,
+            capacity: match phase {
+                // Phase One 25% occupancy for essentials 
+                Phase::One { occupancy, is_essential } => {
+                    if is_essential { occupancy / 4 } else { 0 }
+                },
+                // Phase Two 50% occupancy regardless of essentiality
+                Phase::Two { occupancy } => occupancy / 2
+            }
         }
     }
 
@@ -37,22 +47,20 @@ impl<T> OIOO<T> {
                                                    .collect::<Vec<_>>()
                                                    .len()) * (self.social_distance + 1);
 
-        let out = match self.store[out_index].is_some() {
-                    true => {
-                        let social_distance_index = out_index + self.social_distance + 1;
-                        let mut out_and_social_distance = self.store.drain(out_index..social_distance_index)
-                                                                    .collect::<Vec<_>>();
-                        Some(out_and_social_distance.remove(0).unwrap())
-                    }
-                    false => None
-                  };
+        match self.store[out_index].is_some() {
+          true => {
+              let social_distance_index = out_index + self.social_distance + 1;
+              let mut out_and_social_distance = self.store.drain(out_index..social_distance_index)
+                                                          .collect::<Vec<_>>();
+              if !self.queue.is_empty() {
+                  let first_in_queue = self.queue.remove(0);
+                  self.one_in(first_in_queue);
+              }
 
-        if !self.queue.is_empty() {
-            let first_in_queue = self.queue.remove(0);
-            self.one_in(first_in_queue);
+              Some(out_and_social_distance.remove(0).unwrap())
+          }
+          false => None
         }
-
-        out
     }
 
     fn at_capacity(self: &Self) -> bool {
@@ -64,12 +72,6 @@ impl<T> OIOO<T> {
             self.store.push(None);
         }
     }
-
-    fn remove_social_distance(self: &mut Self) {
-        for _ in 0..self.social_distance {
-            self.store.pop();
-        }
-    }
 }
 
 #[cfg(test)]
@@ -78,7 +80,7 @@ mod tests {
 
     #[test]
     fn test_one_in() {
-        let mut oioo = OIOO::<usize>::new();
+        let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
         assert!(oioo.store.len() == 0);
         oioo.one_in(3);
         assert_eq!(oioo.store.len(), oioo.social_distance + 1);
@@ -86,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_one_in_store_in_queue() {
-        let mut oioo = OIOO::<usize>::new();
+        let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
         let count:usize = 10;
         assert!(oioo.store.len() == 0);
         for x in 0..count {
@@ -102,7 +104,7 @@ mod tests {
 
     #[test]
     fn test_one_out() {
-        let mut oioo = OIOO::<usize>::new();
+        let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
         let value = 3;
         assert!(oioo.store.len() == 0);
         oioo.one_in(value);
@@ -125,7 +127,7 @@ mod tests {
 
     #[test]
     fn test_one_out_inserts_into_store() {
-        let mut oioo = OIOO::<usize>::new();
+        let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
         let count:usize = 11;
         for x in 0..count {
             oioo.one_in(x);
@@ -142,8 +144,9 @@ mod tests {
 
     #[test]
     fn test_one_out_is_random() {
-        let mut oioo_1 = OIOO::<usize>::new();
-        let mut oioo_2 = OIOO::<usize>::new();
+        let mut oioo_1 = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
+        let mut oioo_2 = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
+        
         let count:usize = 11;
 
         let mut keep_trying = true;
