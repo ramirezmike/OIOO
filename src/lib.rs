@@ -1,18 +1,43 @@
 use rand::{ Rng };
 
+/// Dictates the current Phase, which limits the capabilities of an OIOO instance.
 pub enum Phase {
-    One { occupancy: usize, is_essential: bool },
+    One { 
+        occupancy: usize, 
+        is_essential: bool 
+    },
     Two { occupancy: usize },
 }
 
+/// A data structure intended as an alternative to FIFO or LIFO: One-in, One-out. Items are 
+/// pushed into the data structure and are retrieved randomly. Each item is padded with
+/// a number of empty slots based on recommended social-distance guidelines. The capacity
+/// of the OIOO is set upon creation; any excess items are stored in a queue which is 
+/// automatically used to fill the main store when space becomes available. 
 pub struct OIOO<T> {
+    /// Used as primary storage of items pushed into the OIOO up until the capacity is hit.
     store: Vec::<Option<T>>,
+    /// Used as overflow of items that can't fit in in store due to capacity limitations.
     queue: Vec::<T>,
+    /// Number of empty spaces between items.
     social_distance: usize,
+    /// Total number of items stored in "store" determined by Phase used to initialize the OIOO.
     capacity: usize
 }
 
 impl<T> OIOO<T> {
+    /// Creates a new instance of an OIOO based on the selected Phase.
+    ///
+    /// <b>Using Phase One</b>
+    /// <ul>
+    ///     <li>capacity is set to 25% of the passed in Phase::One's occupancy value</li>
+    ///     <li>if <b>is_essential</b> is false, the OIOO will be unable to contain items in the main store</li>
+    /// </ul>
+    ///
+    /// <b>Using Phase Two</b>
+    /// <ul>
+    ///     <li>capacity is set to 50% of the passed in Phase::Two's occupancy value</li>
+    /// </ul>
     pub fn new(phase: Phase) -> OIOO<T> {
         OIOO {
             store: Vec::<Option<T>>::new(),
@@ -29,6 +54,20 @@ impl<T> OIOO<T> {
         }
     }
 
+    /// Pushes an item into the store if there is space. If the store is
+    /// at capacity, the item will be stored "outside" in a queue that will
+    /// be pulled from once space becomes available. Each item added into
+    /// the store will have an appropriate amount of social distance between
+    /// it and the next item added to the store.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // create a Phase Two (50%) capacity OIOO 
+    /// let mut oioo = oioo::OIOO::<usize>::new(oioo::Phase::Two { occupancy: 2 }); 
+    /// oioo.one_in(10); // stored in store
+    /// oioo.one_in(20); // exceeds storage, gets stored in outer queue
+    /// ```
     pub fn one_in(self: &mut Self, item: T) {
         if !self.at_capacity() {
             self.store.push(Some(item));
@@ -38,6 +77,27 @@ impl<T> OIOO<T> {
         }
     }
 
+    /// Returns a random item from the store if one exists. If the store was
+    /// at capacity prior to the call, item will be stored "outside" in a queue that will
+    /// be pulled from once space becomes available.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// // create a Phase Two (50%) capacity OIOO 
+    /// let mut oioo = oioo::OIOO::<usize>::new(oioo::Phase::Two { occupancy: 10 }); 
+    /// oioo.one_in(10); 
+    /// oioo.one_in(20);
+    /// oioo.one_in(30);
+    /// oioo.one_in(40);
+    /// oioo.one_in(50);
+    /// oioo.one_in(60); // exceeds occupancy, stored in queue
+    /// 
+    /// // random from 10, 20, 30, 40 or 50
+    /// println!("{}", oioo.one_out().unwrap() as usize); 
+    /// // random from 10, 20, 30, 40, 50 or 60, excluding value printed above
+    /// println!("{}", oioo.one_out().unwrap() as usize); 
+    /// ```
     pub fn one_out(self: &mut Self) -> Option<T> {
         if self.store.len() == 0 { return None; }
 
@@ -80,14 +140,14 @@ mod tests {
 
     #[test]
     fn test_one_in() {
-        let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
+        let mut oioo = OIOO::<usize>::new(Phase::One { occupancy: 4, is_essential: true });
         assert!(oioo.store.len() == 0);
         oioo.one_in(3);
         assert_eq!(oioo.store.len(), oioo.social_distance + 1);
     }
 
     #[test]
-    fn test_one_in_store_in_queue() {
+    fn test_one_in__store_in_queue() {
         let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
         let count:usize = 10;
         assert!(oioo.store.len() == 0);
@@ -126,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    fn test_one_out_inserts_into_store() {
+    fn test_one_out__inserts_into_store() {
         let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
         let count:usize = 11;
         for x in 0..count {
@@ -143,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn test_one_out_is_random() {
+    fn test_one_out__is_random() {
         let mut oioo_1 = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
         let mut oioo_2 = OIOO::<usize>::new(Phase::Two { occupancy: 20 });
         
