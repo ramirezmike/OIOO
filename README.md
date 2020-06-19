@@ -27,4 +27,4 @@ println!("{}", oioo.one_out().unwrap() as usize);
 println!("{}", oioo.one_out().unwrap() as usize); 
 ```
 
-    ![Example](example.jpg?raw=true "Example")
+![Example](example.jpg?raw=true "Example")
