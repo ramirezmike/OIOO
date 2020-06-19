@@ -9,6 +9,9 @@ pub enum Phase {
     Two { occupancy: usize },
 }
 
+/// Number of empty spaces between items.
+static SOCIAL_DISTANCE: usize = 6;
+
 /// A data structure intended as an alternative to FIFO or LIFO: One-in, One-out. Items are 
 /// pushed into the data structure and are retrieved randomly. Each item is padded with
 /// a number of empty slots based on recommended social-distance guidelines. The capacity
@@ -19,8 +22,6 @@ pub struct OIOO<T> {
     store: Vec::<Option<T>>,
     /// Used as overflow of items that can't fit in in store due to capacity limitations.
     queue: Vec::<T>,
-    /// Number of empty spaces between items.
-    social_distance: usize,
     /// Total number of items contained in "store" determined by Phase used to initialize the OIOO.
     capacity: usize
 }
@@ -47,12 +48,10 @@ impl<T> OIOO<T> {
             // Phase Two 50% occupancy regardless of essentiality
             Phase::Two { occupancy } => occupancy / 2
         };
-        let social_distance = 6;
 
         OIOO {
-            store: Vec::<Option<T>>::with_capacity(capacity * social_distance),
+            store: Vec::<Option<T>>::with_capacity(capacity * SOCIAL_DISTANCE),
             queue: Vec::<T>::new(),
-            social_distance: social_distance,
             capacity: capacity
         }
     }
@@ -110,11 +109,11 @@ impl<T> OIOO<T> {
         let out_index = rng.gen_range(0, self.store.iter()
                                                    .filter(|x| x.is_some())
                                                    .collect::<Vec<_>>()
-                                                   .len()) * (self.social_distance + 1);
+                                                   .len()) * (SOCIAL_DISTANCE + 1);
 
         match self.store[out_index].is_some() {
           true => {
-              let social_distance_index = out_index + self.social_distance + 1;
+              let social_distance_index = out_index + SOCIAL_DISTANCE + 1;
               let mut out_and_social_distance = self.store.drain(out_index..social_distance_index)
                                                           .collect::<Vec<_>>();
               if !self.queue.is_empty() {
@@ -129,11 +128,11 @@ impl<T> OIOO<T> {
     }
 
     fn at_capacity(self: &Self) -> bool {
-        (self.store.len() / (self.social_distance + 1)) >= self.capacity
+        (self.store.len() / (SOCIAL_DISTANCE + 1)) >= self.capacity
     }
 
     fn add_social_distance(self: &mut Self) {
-        for _ in 0..self.social_distance {
+        for _ in 0..SOCIAL_DISTANCE {
             self.store.push(None);
         }
     }

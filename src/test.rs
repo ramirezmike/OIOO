@@ -12,7 +12,7 @@ fn test_one_in() {
     let mut oioo = OIOO::<usize>::new(Phase::One { occupancy: 4, is_essential: true });
     assert!(oioo.store.len() == 0);
     oioo.one_in(3);
-    assert_eq!(oioo.store.len(), oioo.social_distance + 1);
+    assert_eq!(oioo.store.len(), SOCIAL_DISTANCE + 1);
 }
 
 #[test]
@@ -20,7 +20,7 @@ fn test_one_in_other_type() {
     let mut oioo = OIOO::<&str>::new(Phase::One { occupancy: 4, is_essential: true });
     assert!(oioo.store.len() == 0);
     oioo.one_in(&"test");
-    assert_eq!(oioo.store.len(), oioo.social_distance + 1);
+    assert_eq!(oioo.store.len(), SOCIAL_DISTANCE + 1);
 }
 
 #[test]
@@ -73,11 +73,11 @@ fn test_one_in_store_in_queue() {
     for x in 0..count {
         oioo.one_in(x);
     }
-    assert_eq!(oioo.store.len(), (oioo.social_distance + 1) * count);
+    assert_eq!(oioo.store.len(), (SOCIAL_DISTANCE + 1) * count);
     assert_eq!(oioo.queue.len(), 0);
 
     oioo.one_in(count + 1);
-    assert_eq!(oioo.store.len(), (oioo.social_distance + 1) * count);
+    assert_eq!(oioo.store.len(), (SOCIAL_DISTANCE + 1) * count);
     assert_eq!(oioo.queue.len(), 1);
 }
 
@@ -87,7 +87,7 @@ fn test_one_out() {
     let value = 3;
     assert!(oioo.store.len() == 0);
     oioo.one_in(value);
-    assert_eq!(oioo.store.len(), oioo.social_distance + 1);
+    assert_eq!(oioo.store.len(), SOCIAL_DISTANCE + 1);
 
     let first_result = oioo.one_out().unwrap();
     assert_eq!(first_result, value);
