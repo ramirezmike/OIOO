@@ -26,3 +26,5 @@ println!("{}", oioo.one_out().unwrap() as usize);
 // random from 10, 20, 30, 40, 50 or 60, excluding value printed above
 println!("{}", oioo.one_out().unwrap() as usize); 
 ```
+
+    ![Example](example.jpg?raw=true "Example")
