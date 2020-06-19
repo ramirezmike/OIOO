@@ -138,12 +138,69 @@ impl<T> OIOO<T> {
 mod tests {
     use super::*;
 
+    fn get_number_in_store<T>(store: &Vec::<Option<T>>) -> usize {
+        store.iter()
+             .filter(|x| x.is_some())
+             .collect::<Vec<_>>()
+             .len()
+    }
+
     #[test]
     fn test_one_in() {
         let mut oioo = OIOO::<usize>::new(Phase::One { occupancy: 4, is_essential: true });
         assert!(oioo.store.len() == 0);
         oioo.one_in(3);
         assert_eq!(oioo.store.len(), oioo.social_distance + 1);
+    }
+
+    #[test]
+    fn test_one_in_other_type() {
+        let mut oioo = OIOO::<&str>::new(Phase::One { occupancy: 4, is_essential: true });
+        assert!(oioo.store.len() == 0);
+        oioo.one_in(&"test");
+        assert_eq!(oioo.store.len(), oioo.social_distance + 1);
+    }
+
+    #[test]
+    fn test_one_in_is_essential() {
+        let mut oioo = OIOO::<usize>::new(Phase::One { occupancy: 4, is_essential: true });
+        assert!(oioo.store.len() == 0);
+        oioo.one_in(3);
+        assert_eq!(get_number_in_store(&oioo.store), 1);
+    }
+
+    #[test]
+    fn test_one_in_is_not_essential() {
+        let mut oioo = OIOO::<usize>::new(Phase::One { occupancy: 4, is_essential: false });
+        assert!(oioo.store.len() == 0);
+        oioo.one_in(3);
+        assert_eq!(get_number_in_store(&oioo.store), 0);
+    }
+
+    #[test]
+    fn test_one_in_max_capacity_is_less_phase_one() {
+        let occupancy = 8;
+        let mut oioo = OIOO::<usize>::new(Phase::One { occupancy: occupancy, is_essential: true });
+        assert!(oioo.store.len() == 0);
+
+        for i in 0..occupancy {
+            oioo.one_in(i);
+        }
+
+        assert_eq!(get_number_in_store(&oioo.store), occupancy / 4);
+    }
+
+    #[test]
+    fn test_one_in_max_capacity_is_less_phase_two() {
+        let occupancy = 8;
+        let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: occupancy });
+        assert!(oioo.store.len() == 0);
+
+        for i in 0..occupancy {
+            oioo.one_in(i);
+        }
+
+        assert_eq!(get_number_in_store(&oioo.store), occupancy / 2);
     }
 
     #[test]
@@ -176,13 +233,6 @@ mod tests {
 
         let second_result = oioo.one_out();
         assert_eq!(second_result, None);
-    }
-
-    fn get_number_in_store<T>(store: &Vec::<Option<T>>) -> usize {
-        store.iter()
-             .filter(|x| x.is_some())
-             .collect::<Vec<_>>()
-             .len()
     }
 
     #[test]
