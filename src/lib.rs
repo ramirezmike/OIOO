@@ -39,18 +39,21 @@ impl<T> OIOO<T> {
     ///     <li>capacity is set to 50% of the passed in Phase::Two's occupancy value</li>
     /// </ul>
     pub fn new(phase: Phase) -> OIOO<T> {
+        let capacity = match phase {
+            // Phase One 25% occupancy for essentials 
+            Phase::One { occupancy, is_essential } => {
+                if is_essential { occupancy / 4 } else { 0 }
+            },
+            // Phase Two 50% occupancy regardless of essentiality
+            Phase::Two { occupancy } => occupancy / 2
+        };
+        let social_distance = 6;
+
         OIOO {
-            store: Vec::<Option<T>>::new(),
+            store: Vec::<Option<T>>::with_capacity(capacity * social_distance),
             queue: Vec::<T>::new(),
-            social_distance: 6,
-            capacity: match phase {
-                // Phase One 25% occupancy for essentials 
-                Phase::One { occupancy, is_essential } => {
-                    if is_essential { occupancy / 4 } else { 0 }
-                },
-                // Phase Two 50% occupancy regardless of essentiality
-                Phase::Two { occupancy } => occupancy / 2
-            }
+            social_distance: social_distance,
+            capacity: capacity
         }
     }
 
