@@ -8,6 +8,22 @@ fn get_number_in_store<T>(store: &Vec::<Option<T>>) -> usize {
 }
 
 #[test]
+fn test() {
+    let mut oioo = OIOO::<usize>::new(Phase::Two { occupancy: 10 }); 
+    oioo.one_in(10); 
+    oioo.one_in(20);
+    oioo.one_in(30);
+    oioo.one_in(40);
+    oioo.one_in(50);
+    oioo.one_in(60); // exceeds occupancy, contained in queue
+    
+    // random from 10, 20, 30, 40 or 50
+    println!("{}", oioo.one_out().unwrap() as usize); 
+    // random from 10, 20, 30, 40, 50 or 60, excluding value printed above
+    println!("{}", oioo.one_out().unwrap() as usize); 
+}
+
+#[test]
 fn test_one_in() {
     let mut oioo = OIOO::<usize>::new(Phase::One { occupancy: 4, is_essential: true });
     assert!(oioo.store.len() == 0);
